@@ -1,5 +1,5 @@
 # Lindsey West
-# W
+# W01518975
 # February 18, 2026
 
 # Task 1: Language Membership Testing
@@ -20,8 +20,25 @@ def is_in_language_L(string):
         is_in_language_L("aba") -> False
         is_in_language_L("") -> False
     """
-    # Your implementation here
-    pass
+    if not string:
+        return False
+
+    for char in string:
+        if char not in {"a", "b"}:
+            return False
+
+    first_b = string.find("b")
+
+    if first_b == -1:
+        return False
+
+    a_only = string[:first_b]
+    b_only = string[first_b:]
+
+    if "a" in b_only:
+        return False
+
+    return len(a_only) == len(b_only)
 
 # Task 2: Kleene Closure Generator
 def kleene_closure_generator(base_language, max_length):
@@ -42,8 +59,32 @@ def kleene_closure_generator(base_language, max_length):
         - "aa", "abb", "bba", "bbbb" (from L²)
         - etc.
     """
-    # Your implementation here
-    pass
+    if max_length < 0:
+        return set()
+
+        # always include the empty string
+    results = {""}
+
+    # remove empty string from base_language to prevent infinite no-op expansions
+    base = [s for s in base_language if s != ""]
+
+    # if there are no non-empty strings to add, closure is just {""}
+    if not base:
+        return results
+
+    # BFS-style expansion
+    frontier = {""}  # strings we will expand from
+    while frontier:
+        new_frontier = set()
+        for prefix in frontier:
+            for token in base:
+                candidate = prefix + token
+                if len(candidate) <= max_length and candidate not in results:
+                    results.add(candidate)
+                    new_frontier.add(candidate)
+        frontier = new_frontier
+
+    return results
 
 # Task 3: Recursive Language Definition
 def generate_recursive_language_M(n):
@@ -62,8 +103,13 @@ def generate_recursive_language_M(n):
         generate_recursive_language_M(2) -> "yyxzz"
         generate_recursive_language_M(3) -> "yyyxzzz"
     """
-    # Your implementation here
-    pass
+    # Base case
+    if n == 0:
+        return "x"
+
+    # Recursive case
+    return "y" + generate_recursive_language_M(n - 1) + "z"
+
 
 # Task 4: Regular Expression Validator
 def regex_match(pattern, string):
@@ -91,8 +137,74 @@ def regex_match(pattern, string):
         regex_match("a|b", "a") -> True
         regex_match("a|b", "c") -> False
     """
-    # Your implementation here
-    pass
+    if "|*" in pattern:
+        raise Exception("Bad pattern. '|*' can not be present")
+    if pattern.startswith("*"):
+        raise Exception("Bad pattern. Cannot start pattern with '*'.")
+
+        # final variable used to keep track of whether it matches
+    does_match = False
+
+    # split up the unions
+    pats = pattern.split('|')
+    for pat in pats:
+        is_matching = True
+
+        # only concatenation and the kleene *
+        i = 0
+        blocks = []
+        while i < len(pat):
+            # look for * if not the last character
+            # to build the blocks
+            if i != len(pat) - 1 and pat[i + 1] == '*':
+                blocks.append((pat[i], True))  # True because has Kleene star
+                i += 2
+            else:
+                blocks.append((pat[i], False))  # False because no Kleene star
+                i += 1
+
+        b_ptr = 0
+        for char in string:
+            if b_ptr >= len(blocks):
+                is_matching = False
+                break
+
+            # find all valid chars based on b_ptr
+            keep_looking = True
+            valid = []
+            diff = 0
+            while keep_looking:
+                if b_ptr + diff == len(blocks):
+                    break
+
+                valid.append(blocks[b_ptr + diff][0])
+                keep_looking = blocks[b_ptr + diff][1]
+                diff += 1
+
+            first_match = -1
+            for i, v in enumerate(valid):
+                if char == v:
+                    first_match = i
+                    break
+
+            if first_match < 0:
+                is_matching = False
+
+            if blocks[b_ptr][1]:  # if this one is Kleene *
+                b_ptr += first_match
+                if not blocks[b_ptr][1]:  # if that one is not Kleene *
+                    b_ptr += 1
+
+            else:
+                b_ptr += 1
+
+        if is_matching:
+            # we got through all the chars in the string but there
+            # may still be another block to evaluate
+            remaining = [x[1] for x in blocks[b_ptr:]]
+            does_match = all(remaining)
+
+    return does_match
 
 
 # Test Cases
